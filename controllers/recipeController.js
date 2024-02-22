@@ -1,4 +1,5 @@
 const Recipe = require("../models/Recipe");
+const User = require("../models/User");
 
 const addRecipe = async (req, res) => {
   const { name, time, mainIngredient, note } = req.body;
@@ -9,7 +10,7 @@ const addRecipe = async (req, res) => {
       time,
       mainIngredient,
       note,
-      userId
+      userId,
     });
 
     res.json(recipe);
@@ -18,60 +19,82 @@ const addRecipe = async (req, res) => {
   }
 };
 
-const getRecipes = async (req, res) =>{
+const getRecipes = async (req, res) => {
   const _id = req.user.userId;
   try {
-    const recipes = await Recipe.find({userId : _id});
-    
+    const recipes = await Recipe.find({ userId: _id });
+
     res.json(recipes);
   } catch (error) {
     res.json({ error: error.message });
   }
-}
+};
 
-const removeRecipes = async (req, res)=>{
-  const {_id} = req.params;
+const removeRecipes = async (req, res) => {
+  const { _id } = req.params;
   try {
     await Recipe.findByIdAndDelete(_id);
 
-    res.json({message : "Removed"});
+    res.json({ message: "Removed" });
   } catch (error) {
-    res.json({ error: error.message });    
+    res.json({ error: error.message });
   }
-}
+};
 
-const updateRecipe = async (req, res)=>{
-  const {_id} = req.params;
-  const {name, time, mainIngredient, note} = req.body;
+const updateRecipe = async (req, res) => {
+  const { _id } = req.params;
+  const { name, time, mainIngredient, note } = req.body;
   try {
     const recipe = await Recipe.findByIdAndUpdate(_id, {
       name,
       time,
       mainIngredient,
-      note
-    })
+      note,
+    });
 
     res.json(recipe);
   } catch (error) {
     res.json({ error: error.message });
   }
-}
+};
 
-const getRecipe = async (req, res)=>{
-  const {recipeId} = req.params;
+const getRecipe = async (req, res) => {
+  const { recipeId } = req.params;
   try {
     const recipe = await Recipe.findById(recipeId);
-    
+
     res.json(recipe);
   } catch (error) {
     res.json({ error: error.message });
   }
-}
+};
+
+const adminRecipes = async (req, res) => {
+  try {
+    const recipes = await Recipe.find();
+
+    const responseData = await Promise.all(
+      recipes.map(async (recipe) => {
+        const user = await User.findById(recipe.userId);
+        const {userId, ...recipeWithoutUserId} = recipe._doc;
+        return {
+          ...recipeWithoutUserId,
+          user: user.username,
+        };
+      })
+    );
+
+    res.json(responseData);
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+};
 
 module.exports = {
   addRecipe,
   getRecipes,
   removeRecipes,
   updateRecipe,
-  getRecipe
+  getRecipe,
+  adminRecipes,
 };
